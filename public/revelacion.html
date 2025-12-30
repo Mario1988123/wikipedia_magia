@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>.</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            touch-action: manipulation;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .palabra {
+            font-size: 4rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            text-align: center;
+            padding: 20px;
+            word-break: break-word;
+            max-width: 90%;
+
+            /* INVISIBLE por defecto */
+            color: transparent;
+            transition: color 0.1s ease-out;
+        }
+
+        /* Al mantener presionado, se muestra MUY TENUE */
+        .container.active .palabra {
+            /* Color muy oscuro, apenas visible con brillo bajo */
+            color: #0a0a0a;
+        }
+
+        /* Modo brillo: para ajustar qué tan visible es */
+        body.brillo-1 .container.active .palabra { color: #080808; }
+        body.brillo-2 .container.active .palabra { color: #0a0a0a; }
+        body.brillo-3 .container.active .palabra { color: #0d0d0d; }
+        body.brillo-4 .container.active .palabra { color: #111111; }
+        body.brillo-5 .container.active .palabra { color: #151515; }
+
+        /* Controles ocultos - doble tap para mostrar */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .controls.visible {
+            display: flex;
+        }
+
+        .controls button {
+            background: #111;
+            color: #333;
+            border: 1px solid #222;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .controls button:active {
+            background: #222;
+        }
+
+        /* Indicador de brillo oculto */
+        .brillo-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            color: #111;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .brillo-indicator.show {
+            opacity: 1;
+        }
+
+        /* Pantalla completa */
+        .fullscreen-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: transparent;
+            border: none;
+            color: #0a0a0a;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .fullscreen-btn:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="brillo-2">
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+
+    <div class="container" id="container">
+        <div class="palabra" id="palabra">...</div>
+    </div>
+
+    <div class="brillo-indicator" id="brilloIndicator">Brillo: 2</div>
+
+    <div class="controls" id="controls">
+        <button onclick="cambiarBrillo(-1)">- Oscuro</button>
+        <button onclick="cambiarBrillo(1)">+ Claro</button>
+        <button onclick="recargar()">Recargar</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('container');
+        const palabraEl = document.getElementById('palabra');
+        const controls = document.getElementById('controls');
+        const brilloIndicator = document.getElementById('brilloIndicator');
+
+        let nivelBrillo = 2;
+        let palabraActual = '';
+        let tapCount = 0;
+        let tapTimer = null;
+
+        // Cargar la palabra
+        async function cargarPalabra() {
+            try {
+                const response = await fetch('/api/ultima-busqueda');
+                const data = await response.json();
+                if (data.termino) {
+                    palabraActual = data.termino;
+                    palabraEl.textContent = palabraActual;
+                } else {
+                    palabraEl.textContent = '...';
+                }
+            } catch (e) {
+                console.error('Error cargando palabra:', e);
+            }
+        }
+
+        // Polling para actualizar la palabra
+        setInterval(cargarPalabra, 1000);
+        cargarPalabra();
+
+        // Mostrar palabra al mantener presionado
+        container.addEventListener('mousedown', () => {
+            container.classList.add('active');
+        });
+
+        container.addEventListener('mouseup', () => {
+            container.classList.remove('active');
+        });
+
+        container.addEventListener('mouseleave', () => {
+            container.classList.remove('active');
+        });
+
+        // Touch events para móvil
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            container.classList.add('active');
+
+            // Detectar doble tap
+            tapCount++;
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => {
+                    tapCount = 0;
+                }, 300);
+            } else if (tapCount === 2) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                toggleControls();
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            container.classList.remove('active');
+        });
+
+        container.addEventListener('touchcancel', () => {
+            container.classList.remove('active');
+        });
+
+        // Doble click para controles en desktop
+        container.addEventListener('dblclick', () => {
+            toggleControls();
+        });
+
+        function toggleControls() {
+            controls.classList.toggle('visible');
+            setTimeout(() => {
+                controls.classList.remove('visible');
+            }, 5000);
+        }
+
+        function cambiarBrillo(delta) {
+            nivelBrillo = Math.max(1, Math.min(5, nivelBrillo + delta));
+
+            // Actualizar clase
+            document.body.className = `brillo-${nivelBrillo}`;
+
+            // Mostrar indicador brevemente
+            brilloIndicator.textContent = `Brillo: ${nivelBrillo}`;
+            brilloIndicator.classList.add('show');
+            setTimeout(() => {
+                brilloIndicator.classList.remove('show');
+            }, 1000);
+        }
+
+        function recargar() {
+            cargarPalabra();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {});
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Atajos de teclado (para testing)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') cambiarBrillo(1);
+            if (e.key === 'ArrowDown') cambiarBrillo(-1);
+            if (e.key === ' ') container.classList.add('active');
+            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === ' ') container.classList.remove('active');
+        });
+
+        // Prevenir zoom en móvil
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

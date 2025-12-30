@@ -1,0 +1,15 @@
+{
+  "name": "wikipedia-magia",
+  "version": "1.0.0",
+  "description": "Proxy inverso de Wikipedia para truco de mentalismo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
+    "ws": "^8.14.2"
+  }
+}
