@@ -38,6 +38,11 @@ app.get('/api/sw.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sw.js'));
 });
 
+// Página del truco con barra de navegador falsa
+app.get('/truco', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'truco.html'));
+});
+
 app.get('/api/ultima-busqueda', (req, res) => {
     res.json(ultimaBusqueda || { termino: null });
 });
@@ -317,20 +322,23 @@ app.get('/', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`
-╔═══════════════════════════════════════════════════════════════╗
-║          WIKIPEDIA MAGIA - PROXY INVERSO REAL                 ║
-╠═══════════════════════════════════════════════════════════════╣
-║                                                               ║
-║  Servidor: http://localhost:${PORT}                              ║
-║                                                               ║
-║  URLS:                                                        ║
-║  • Wikipedia (espectador): http://localhost:${PORT}/              ║
-║  • Panel Mago (PWA):       http://localhost:${PORT}/api/mago      ║
-║  • Revelación:             http://localhost:${PORT}/api/revelacion║
-║                                                               ║
-║  Para acceder desde móvil, usa tu IP local:                   ║
-║  Ejecuta 'ipconfig' para ver tu IP (ej: 192.168.1.X)          ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════╗
+║            WIKIPEDIA MAGIA - PROXY INVERSO REAL                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  PARA EL TRUCO (con barra falsa de es.wikipedia.org):             ║
+║  ★ http://localhost:${PORT}/truco  ← USA ESTA + F11                  ║
+║                                                                   ║
+║  Otras URLs:                                                      ║
+║  • Wikipedia normal:  http://localhost:${PORT}/                      ║
+║  • Panel Mago (PWA):  http://localhost:${PORT}/api/mago              ║
+║  • Revelación:        http://localhost:${PORT}/api/revelacion        ║
+║                                                                   ║
+║  INSTRUCCIONES:                                                   ║
+║  1. Abre /truco en el navegador                                   ║
+║  2. Pulsa F11 para pantalla completa                              ║
+║  3. El espectador verá "es.wikipedia.org" en la barra             ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
     `);
 });

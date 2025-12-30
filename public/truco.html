@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia</title>
+    <link rel="icon" href="https://www.wikipedia.org/static/favicon/wikipedia.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        /* Barra de navegador falsa estilo Chrome */
+        .fake-browser {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #202124;
+        }
+
+        /* Barra de título/tabs */
+        .browser-tabs {
+            height: 36px;
+            background: #202124;
+            display: flex;
+            align-items: flex-end;
+            padding: 0 8px;
+            -webkit-app-region: drag;
+        }
+
+        .tab {
+            height: 28px;
+            background: #323639;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            max-width: 240px;
+            min-width: 180px;
+        }
+
+        .tab-favicon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .tab-title {
+            color: #e8eaed;
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9aa0a6;
+            font-size: 14px;
+        }
+
+        /* Barra de dirección */
+        .browser-toolbar {
+            height: 40px;
+            background: #323639;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9aa0a6;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-btn:active {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .nav-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Barra de URL */
+        .url-bar {
+            flex: 1;
+            height: 28px;
+            background: #202124;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            margin: 0 8px;
+        }
+
+        .url-icon {
+            color: #9aa0a6;
+            font-size: 14px;
+        }
+
+        .url-text {
+            color: #e8eaed;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .url-text .domain {
+            color: #e8eaed;
+        }
+
+        .url-text .path {
+            color: #9aa0a6;
+        }
+
+        .url-text .secure {
+            color: #81c995;
+            margin-right: 4px;
+        }
+
+        /* Botones de la derecha */
+        .toolbar-right {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Iframe de Wikipedia */
+        .browser-content {
+            flex: 1;
+            background: #fff;
+        }
+
+        .browser-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Instrucciones (se ocultan después) */
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: -apple-system, sans-serif;
+            font-size: 14px;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .instructions.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Ocultar cuando NO está en fullscreen */
+        .fullscreen-hint {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 30px 50px;
+            border-radius: 12px;
+            font-family: -apple-system, sans-serif;
+            text-align: center;
+            z-index: 2000;
+        }
+
+        .fullscreen-hint h2 {
+            margin-bottom: 10px;
+        }
+
+        .fullscreen-hint kbd {
+            background: #444;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="fake-browser">
+        <!-- Tabs -->
+        <div class="browser-tabs">
+            <div class="tab">
+                <img class="tab-favicon" src="https://www.wikipedia.org/static/favicon/wikipedia.ico" alt="">
+                <span class="tab-title" id="tabTitle">Wikipedia, la enciclopedia libre</span>
+                <span class="tab-close">×</span>
+            </div>
+        </div>
+
+        <!-- Toolbar con URL -->
+        <div class="browser-toolbar">
+            <button class="nav-btn" onclick="goBack()" id="backBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </button>
+            <button class="nav-btn" onclick="goForward()" id="forwardBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+            </button>
+            <button class="nav-btn" onclick="reload()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+            </button>
+
+            <div class="url-bar">
+                <span class="url-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#81c995">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                    </svg>
+                </span>
+                <span class="url-text" id="urlText">
+                    <span class="domain">es.wikipedia.org</span><span class="path" id="urlPath">/wiki/Wikipedia:Portada</span>
+                </span>
+            </div>
+
+            <div class="toolbar-right">
+                <button class="nav-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenido de Wikipedia -->
+        <div class="browser-content">
+            <iframe id="wikiFrame" src="/wiki/Wikipedia:Portada"></iframe>
+        </div>
+    </div>
+
+    <div class="instructions" id="instructions">
+        Pulsa <strong>F11</strong> para pantalla completa (ocultar barra real del navegador)
+    </div>
+
+    <script>
+        const iframe = document.getElementById('wikiFrame');
+        const urlPath = document.getElementById('urlPath');
+        const tabTitle = document.getElementById('tabTitle');
+        const instructions = document.getElementById('instructions');
+
+        // Ocultar instrucciones después de 5 segundos
+        setTimeout(() => {
+            instructions.classList.add('hidden');
+        }, 5000);
+
+        // Actualizar URL falsa cuando cambia el iframe
+        function updateFakeUrl() {
+            try {
+                const path = iframe.contentWindow.location.pathname;
+                urlPath.textContent = path;
+
+                // Actualizar título del tab
+                const title = iframe.contentDocument.title || 'Wikipedia';
+                tabTitle.textContent = title;
+            } catch (e) {
+                // Cross-origin, usar el src
+            }
+        }
+
+        iframe.addEventListener('load', updateFakeUrl);
+
+        // Navegación
+        function goBack() {
+            try {
+                iframe.contentWindow.history.back();
+            } catch (e) {}
+        }
+
+        function goForward() {
+            try {
+                iframe.contentWindow.history.forward();
+            } catch (e) {}
+        }
+
+        function reload() {
+            iframe.contentWindow.location.reload();
+        }
+
+        // Interceptar navegación para actualizar URL
+        setInterval(() => {
+            updateFakeUrl();
+        }, 500);
+
+        // Detectar fullscreen
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                instructions.classList.add('hidden');
+            }
+        });
+
+        // F11 automático al cargar (opcional)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11') {
+                // El navegador maneja F11
+            }
+        });
+    </script>
+</body>
+</html>
