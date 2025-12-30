@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>.</title>
     <style>
         * {
@@ -11,20 +13,21 @@
             box-sizing: border-box;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background: #000;
         }
 
         body {
-            background: #000;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             touch-action: manipulation;
         }
 
@@ -38,234 +41,236 @@
         }
 
         .palabra {
-            font-size: 4rem;
-            font-weight: 300;
-            letter-spacing: 0.1em;
+            font-size: clamp(3rem, 15vw, 6rem);
+            font-weight: 200;
+            letter-spacing: 0.05em;
             text-align: center;
             padding: 20px;
             word-break: break-word;
             max-width: 90%;
-
-            /* INVISIBLE por defecto */
             color: transparent;
-            transition: color 0.1s ease-out;
+            transition: color 0.15s ease;
         }
 
-        /* Al mantener presionado, se muestra MUY TENUE */
+        /* Niveles de visibilidad - muy sutiles */
         .container.active .palabra {
-            /* Color muy oscuro, apenas visible con brillo bajo */
-            color: #0a0a0a;
+            color: var(--text-color, #080808);
         }
 
-        /* Modo brillo: para ajustar qué tan visible es */
-        body.brillo-1 .container.active .palabra { color: #080808; }
-        body.brillo-2 .container.active .palabra { color: #0a0a0a; }
-        body.brillo-3 .container.active .palabra { color: #0d0d0d; }
-        body.brillo-4 .container.active .palabra { color: #111111; }
-        body.brillo-5 .container.active .palabra { color: #151515; }
-
-        /* Controles ocultos - doble tap para mostrar */
+        /* Controles ocultos */
         .controls {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            gap: 10px;
-            z-index: 100;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
         }
 
         .controls.visible {
-            display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
 
-        .controls button {
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: #111;
-            color: #333;
             border: 1px solid #222;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 0.8rem;
+            color: #444;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
         }
 
-        .controls button:active {
+        .control-btn:active {
             background: #222;
         }
 
-        /* Indicador de brillo oculto */
-        .brillo-indicator {
+        /* Indicador de nivel */
+        .level-indicator {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            color: #111;
-            font-size: 0.7rem;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             opacity: 0;
             transition: opacity 0.3s;
         }
 
-        .brillo-indicator.show {
+        .level-indicator.show {
             opacity: 1;
         }
 
-        /* Pantalla completa */
-        .fullscreen-btn {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: transparent;
-            border: none;
-            color: #0a0a0a;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
+        .level-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #111;
+            transition: background 0.2s;
         }
 
-        .fullscreen-btn:hover {
-            opacity: 1;
+        .level-dot.active {
+            background: #333;
         }
     </style>
 </head>
-<body class="brillo-2">
-    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
-
+<body>
     <div class="container" id="container">
         <div class="palabra" id="palabra">...</div>
     </div>
 
-    <div class="brillo-indicator" id="brilloIndicator">Brillo: 2</div>
+    <div class="level-indicator" id="levelIndicator">
+        <div class="level-dot" data-level="5"></div>
+        <div class="level-dot" data-level="4"></div>
+        <div class="level-dot" data-level="3"></div>
+        <div class="level-dot" data-level="2"></div>
+        <div class="level-dot" data-level="1"></div>
+    </div>
 
     <div class="controls" id="controls">
-        <button onclick="cambiarBrillo(-1)">- Oscuro</button>
-        <button onclick="cambiarBrillo(1)">+ Claro</button>
-        <button onclick="recargar()">Recargar</button>
+        <button class="control-btn" onclick="cambiarNivel(-1)">-</button>
+        <button class="control-btn" onclick="recargar()">&#8635;</button>
+        <button class="control-btn" onclick="cambiarNivel(1)">+</button>
     </div>
 
     <script>
         const container = document.getElementById('container');
         const palabraEl = document.getElementById('palabra');
         const controls = document.getElementById('controls');
-        const brilloIndicator = document.getElementById('brilloIndicator');
+        const levelIndicator = document.getElementById('levelIndicator');
 
-        let nivelBrillo = 2;
+        // Niveles de visibilidad (colores muy oscuros)
+        const niveles = ['#050505', '#080808', '#0b0b0b', '#0f0f0f', '#141414'];
+        let nivelActual = 1;
+        let controlsTimer;
         let palabraActual = '';
-        let tapCount = 0;
-        let tapTimer = null;
 
-        // Cargar la palabra
-        async function cargarPalabra() {
-            try {
-                const response = await fetch('/api/ultima-busqueda');
-                const data = await response.json();
-                if (data.termino) {
-                    palabraActual = data.termino;
-                    palabraEl.textContent = palabraActual;
-                } else {
-                    palabraEl.textContent = '...';
-                }
-            } catch (e) {
-                console.error('Error cargando palabra:', e);
-            }
+        function actualizarNivel() {
+            document.body.style.setProperty('--text-color', niveles[nivelActual]);
+
+            // Actualizar indicador
+            document.querySelectorAll('.level-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', (4 - i) <= nivelActual);
+            });
         }
 
-        // Polling para actualizar la palabra
-        setInterval(cargarPalabra, 1000);
-        cargarPalabra();
-
-        // Mostrar palabra al mantener presionado
-        container.addEventListener('mousedown', () => {
-            container.classList.add('active');
-        });
-
-        container.addEventListener('mouseup', () => {
-            container.classList.remove('active');
-        });
-
-        container.addEventListener('mouseleave', () => {
-            container.classList.remove('active');
-        });
-
-        // Touch events para móvil
-        container.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            container.classList.add('active');
-
-            // Detectar doble tap
-            tapCount++;
-            if (tapCount === 1) {
-                tapTimer = setTimeout(() => {
-                    tapCount = 0;
-                }, 300);
-            } else if (tapCount === 2) {
-                clearTimeout(tapTimer);
-                tapCount = 0;
-                toggleControls();
-            }
-        }, { passive: false });
-
-        container.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            container.classList.remove('active');
-        });
-
-        container.addEventListener('touchcancel', () => {
-            container.classList.remove('active');
-        });
-
-        // Doble click para controles en desktop
-        container.addEventListener('dblclick', () => {
-            toggleControls();
-        });
-
-        function toggleControls() {
-            controls.classList.toggle('visible');
-            setTimeout(() => {
-                controls.classList.remove('visible');
-            }, 5000);
+        function cambiarNivel(delta) {
+            nivelActual = Math.max(0, Math.min(4, nivelActual + delta));
+            actualizarNivel();
+            mostrarIndicador();
         }
 
-        function cambiarBrillo(delta) {
-            nivelBrillo = Math.max(1, Math.min(5, nivelBrillo + delta));
-
-            // Actualizar clase
-            document.body.className = `brillo-${nivelBrillo}`;
-
-            // Mostrar indicador brevemente
-            brilloIndicator.textContent = `Brillo: ${nivelBrillo}`;
-            brilloIndicator.classList.add('show');
-            setTimeout(() => {
-                brilloIndicator.classList.remove('show');
-            }, 1000);
+        function mostrarIndicador() {
+            levelIndicator.classList.add('show');
+            setTimeout(() => levelIndicator.classList.remove('show'), 1500);
         }
 
         function recargar() {
             cargarPalabra();
         }
 
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => {});
-            } else {
-                document.exitFullscreen();
-            }
+        async function cargarPalabra() {
+            try {
+                const response = await fetch('/api/ultima-busqueda');
+                const data = await response.json();
+                if (data.termino && data.termino !== palabraActual) {
+                    palabraActual = data.termino;
+                    palabraEl.textContent = palabraActual;
+                }
+            } catch (e) {}
         }
 
-        // Atajos de teclado (para testing)
+        // Polling
+        setInterval(cargarPalabra, 1000);
+        cargarPalabra();
+        actualizarNivel();
+
+        // Mostrar palabra al mantener presionado
+        function activar() {
+            container.classList.add('active');
+        }
+
+        function desactivar() {
+            container.classList.remove('active');
+        }
+
+        // Mouse
+        container.addEventListener('mousedown', activar);
+        container.addEventListener('mouseup', desactivar);
+        container.addEventListener('mouseleave', desactivar);
+
+        // Touch
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            activar();
+        }, { passive: false });
+
+        container.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            desactivar();
+        });
+
+        container.addEventListener('touchcancel', desactivar);
+
+        // Triple tap para mostrar controles
+        let tapCount = 0;
+        let tapTimer;
+
+        container.addEventListener('click', () => {
+            tapCount++;
+            clearTimeout(tapTimer);
+
+            if (tapCount === 3) {
+                tapCount = 0;
+                controls.classList.toggle('visible');
+
+                // Auto-ocultar controles
+                clearTimeout(controlsTimer);
+                if (controls.classList.contains('visible')) {
+                    controlsTimer = setTimeout(() => {
+                        controls.classList.remove('visible');
+                    }, 5000);
+                }
+            } else {
+                tapTimer = setTimeout(() => tapCount = 0, 400);
+            }
+        });
+
+        // Teclado
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') cambiarBrillo(1);
-            if (e.key === 'ArrowDown') cambiarBrillo(-1);
-            if (e.key === ' ') container.classList.add('active');
-            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+            if (e.key === ' ') {
+                e.preventDefault();
+                activar();
+            }
+            if (e.key === 'ArrowUp') cambiarNivel(1);
+            if (e.key === 'ArrowDown') cambiarNivel(-1);
+            if (e.key === 'f' || e.key === 'F') {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen();
+                }
+            }
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.key === ' ') container.classList.remove('active');
+            if (e.key === ' ') desactivar();
         });
 
-        // Prevenir zoom en móvil
+        // Prevenir zoom
         document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('dblclick', (e) => e.preventDefault());
     </script>
 </body>
 </html>

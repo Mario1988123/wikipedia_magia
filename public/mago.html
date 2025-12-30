@@ -2,243 +2,332 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>M</title>
+    <link rel="manifest" href="/api/manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100'/></svg>">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #000;
             color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
         }
 
-        .container {
-            max-width: 600px;
-            width: 100%;
+        .app {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header minimalista */
+        .header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1a1a1a;
         }
 
         .status {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
         }
 
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #ff4444;
-            animation: pulse 2s infinite;
+            background: #ff3b30;
         }
 
-        .status-dot.connected {
-            background: #44ff44;
+        .status-dot.online {
+            background: #30d158;
+            box-shadow: 0 0 10px #30d158;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .header-actions {
+            display: flex;
+            gap: 15px;
         }
 
-        .status-text {
-            font-size: 0.9rem;
-            color: #888;
+        .header-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
         }
 
-        .palabra-container {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
-            border-radius: 20px;
-            border: 1px solid #333;
+        .header-btn:active {
+            color: #fff;
+        }
+
+        /* Área principal de la palabra */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .palabra-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #333;
             margin-bottom: 20px;
         }
 
-        .label {
-            font-size: 0.8rem;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-        }
-
         .palabra {
-            font-size: 3rem;
-            font-weight: 300;
-            color: #fff;
+            font-size: clamp(2rem, 12vw, 5rem);
+            font-weight: 200;
+            text-align: center;
             word-break: break-word;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            max-width: 100%;
+            line-height: 1.2;
+            min-height: 1.2em;
+            transition: all 0.3s ease;
         }
 
         .palabra.empty {
-            color: #333;
-            font-size: 1.5rem;
+            color: #222;
+        }
+
+        .palabra.new {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .timestamp {
-            font-size: 0.75rem;
-            color: #444;
-            margin-top: 15px;
+            position: absolute;
+            bottom: 30px;
+            font-size: 11px;
+            color: #333;
         }
 
+        /* Historial */
         .historial {
-            background: #111;
-            border-radius: 10px;
-            padding: 15px;
-            max-height: 200px;
+            border-top: 1px solid #1a1a1a;
+            max-height: 35%;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .historial h3 {
-            font-size: 0.8rem;
-            color: #666;
+        .historial-header {
+            padding: 12px 20px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
+            letter-spacing: 2px;
+            color: #444;
+            background: #0a0a0a;
+            position: sticky;
+            top: 0;
         }
 
         .historial-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #222;
-            font-size: 0.9rem;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #111;
         }
 
-        .historial-item:last-child {
-            border-bottom: none;
+        .historial-item:active {
+            background: #111;
         }
 
-        .historial-item .term {
-            color: #0af;
+        .historial-term {
+            color: #0a84ff;
+            font-size: 16px;
         }
 
-        .historial-item .time {
-            color: #444;
-            font-size: 0.8rem;
+        .historial-time {
+            color: #333;
+            font-size: 12px;
         }
 
-        .controls {
+        /* Notificación visual */
+        .flash {
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0% { background: #0a84ff; }
+            100% { background: transparent; }
+        }
+
+        /* Modo discreto */
+        body.discreto .header,
+        body.discreto .historial,
+        body.discreto .palabra-label,
+        body.discreto .timestamp {
+            display: none !important;
+        }
+
+        body.discreto .main {
+            background: #000;
+        }
+
+        body.discreto .palabra {
+            font-size: 14px;
+            color: #111;
+        }
+
+        /* Vibración táctil */
+        .vibrate {
+            animation: vibrate 0.1s linear;
+        }
+
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        /* Modal de instalación PWA */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #1c1c1e;
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .install-prompt p {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .install-prompt .buttons {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
-            justify-content: center;
         }
 
-        .btn {
-            background: #222;
-            color: #888;
-            border: 1px solid #333;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .btn:hover {
-            background: #333;
-            color: #fff;
-        }
-
-        .btn.primary {
-            background: #0066cc;
-            color: #fff;
-            border-color: #0066cc;
-        }
-
-        .btn.primary:hover {
-            background: #0077ee;
-        }
-
-        /* Modo discreto - pantalla casi invisible */
-        .discreto .palabra-container {
-            background: transparent;
+        .install-prompt button {
+            flex: 1;
+            padding: 12px;
             border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
-        .discreto .palabra {
-            font-size: 1rem;
-            color: #1a1a1a;
+        .install-prompt .install-btn {
+            background: #0a84ff;
+            color: #fff;
         }
 
-        .discreto .label,
-        .discreto .timestamp,
-        .discreto .historial,
-        .discreto .controls,
-        .discreto .status {
-            display: none;
-        }
-
-        /* Notificación sonora visual */
-        .flash {
-            animation: flashAnim 0.3s ease-out;
-        }
-
-        @keyframes flashAnim {
-            0% { background: #0066cc; }
-            100% { background: transparent; }
+        .install-prompt .dismiss-btn {
+            background: #2c2c2e;
+            color: #fff;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="status">
-            <div class="status-dot" id="statusDot"></div>
-            <span class="status-text" id="statusText">Conectando...</span>
-        </div>
+    <div class="app">
+        <header class="header">
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Conectando...</span>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="toggleDiscreto()" title="Modo discreto">
+                    <span id="discretoIcon">&#128065;</span>
+                </button>
+                <button class="header-btn" onclick="resetear()" title="Limpiar">
+                    &#10227;
+                </button>
+            </div>
+        </header>
 
-        <div class="palabra-container" id="palabraContainer">
-            <div class="label">Última búsqueda</div>
+        <main class="main" id="main">
+            <div class="palabra-label">Buscando</div>
             <div class="palabra empty" id="palabra">Esperando...</div>
             <div class="timestamp" id="timestamp"></div>
-        </div>
+        </main>
 
-        <div class="historial" id="historial">
-            <h3>Historial</h3>
+        <section class="historial" id="historial">
+            <div class="historial-header">Historial</div>
             <div id="historialList"></div>
-        </div>
+        </section>
+    </div>
 
-        <div class="controls">
-            <button class="btn" onclick="toggleDiscreto()">Modo Discreto (D)</button>
-            <button class="btn" onclick="resetear()">Limpiar (R)</button>
-            <button class="btn primary" onclick="abrirRevelacion()">Revelación (V)</button>
+    <div class="install-prompt" id="installPrompt">
+        <p>Instala esta app para acceso rápido y discreto</p>
+        <div class="buttons">
+            <button class="dismiss-btn" onclick="dismissInstall()">Ahora no</button>
+            <button class="install-btn" onclick="installPWA()">Instalar</button>
         </div>
     </div>
 
     <script>
         let ws;
-        let historial = [];
         let modoDiscreto = false;
+        let deferredPrompt;
 
+        // Conectar WebSocket
         function conectar() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${protocol}//${window.location.host}`);
 
             ws.onopen = () => {
-                document.getElementById('statusDot').classList.add('connected');
-                document.getElementById('statusText').textContent = 'Conectado - Esperando búsquedas...';
+                document.getElementById('statusDot').classList.add('online');
+                document.getElementById('statusText').textContent = 'Conectado';
             };
 
             ws.onclose = () => {
-                document.getElementById('statusDot').classList.remove('connected');
-                document.getElementById('statusText').textContent = 'Desconectado - Reconectando...';
+                document.getElementById('statusDot').classList.remove('online');
+                document.getElementById('statusText').textContent = 'Reconectando...';
                 setTimeout(conectar, 2000);
             };
 
@@ -247,18 +336,23 @@
 
                 if (data.tipo === 'busqueda') {
                     mostrarPalabra(data.termino, data.timestamp);
+                } else if (data.tipo === 'historial') {
+                    actualizarHistorial(data.datos);
                 }
             };
         }
 
         function mostrarPalabra(termino, timestamp) {
             const palabraEl = document.getElementById('palabra');
-            const timestampEl = document.getElementById('timestamp');
-            const container = document.getElementById('palabraContainer');
+            const mainEl = document.getElementById('main');
 
-            // Animación de flash
-            container.classList.add('flash');
-            setTimeout(() => container.classList.remove('flash'), 300);
+            // Animaciones
+            mainEl.classList.add('flash');
+            palabraEl.classList.remove('new');
+            void palabraEl.offsetWidth; // Trigger reflow
+            palabraEl.classList.add('new');
+
+            setTimeout(() => mainEl.classList.remove('flash'), 300);
 
             // Mostrar palabra
             palabraEl.textContent = termino;
@@ -266,31 +360,45 @@
 
             // Timestamp
             const fecha = new Date(timestamp);
-            timestampEl.textContent = fecha.toLocaleTimeString();
+            document.getElementById('timestamp').textContent = fecha.toLocaleTimeString();
 
-            // Agregar al historial
-            historial.unshift({ termino, timestamp });
-            actualizarHistorial();
-
-            // Sonido de notificación (vibración en móvil)
+            // Vibración
             if (navigator.vibrate) {
-                navigator.vibrate(200);
+                navigator.vibrate([50, 30, 50]);
             }
 
-            // Notificación del navegador
-            if (Notification.permission === 'granted') {
-                new Notification('Nueva búsqueda', { body: termino });
-            }
+            // Sonido sutil (opcional)
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 800;
+                gainNode.gain.value = 0.1;
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch(e) {}
+
+            // Actualizar historial local
+            const historialList = document.getElementById('historialList');
+            const item = document.createElement('div');
+            item.className = 'historial-item';
+            item.innerHTML = `
+                <span class="historial-term">${termino}</span>
+                <span class="historial-time">${fecha.toLocaleTimeString()}</span>
+            `;
+            historialList.insertBefore(item, historialList.firstChild);
         }
 
-        function actualizarHistorial() {
+        function actualizarHistorial(datos) {
             const lista = document.getElementById('historialList');
-            lista.innerHTML = historial.slice(0, 10).map(item => {
+            lista.innerHTML = datos.map(item => {
                 const fecha = new Date(item.timestamp);
                 return `
                     <div class="historial-item">
-                        <span class="term">${item.termino}</span>
-                        <span class="time">${fecha.toLocaleTimeString()}</span>
+                        <span class="historial-term">${item.termino}</span>
+                        <span class="historial-time">${fecha.toLocaleTimeString()}</span>
                     </div>
                 `;
             }).join('');
@@ -299,37 +407,68 @@
         function toggleDiscreto() {
             modoDiscreto = !modoDiscreto;
             document.body.classList.toggle('discreto', modoDiscreto);
+            document.getElementById('discretoIcon').textContent = modoDiscreto ? '&#128064;' : '&#128065;';
         }
 
         function resetear() {
             document.getElementById('palabra').textContent = 'Esperando...';
             document.getElementById('palabra').classList.add('empty');
             document.getElementById('timestamp').textContent = '';
-            historial = [];
-            actualizarHistorial();
+            document.getElementById('historialList').innerHTML = '';
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ tipo: 'reset' }));
             }
         }
 
-        function abrirRevelacion() {
-            window.open('/revelacion', '_blank');
+        // PWA Install
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                document.getElementById('installPrompt').classList.add('show');
+            }, 3000);
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').classList.remove('show');
+                });
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('installPrompt').classList.remove('show');
+        }
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/api/sw.js').catch(() => {});
         }
 
         // Atajos de teclado
         document.addEventListener('keydown', (e) => {
             if (e.key === 'd' || e.key === 'D') toggleDiscreto();
             if (e.key === 'r' || e.key === 'R') resetear();
-            if (e.key === 'v' || e.key === 'V') abrirRevelacion();
+            if (e.key === 'Escape') {
+                if (modoDiscreto) toggleDiscreto();
+            }
         });
 
-        // Pedir permiso para notificaciones
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
+        // Doble tap para modo discreto en móvil
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                toggleDiscreto();
+            }
+            lastTap = now;
+        });
 
-        // Iniciar conexión
+        // Iniciar
         conectar();
     </script>
 </body>
